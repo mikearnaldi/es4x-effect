@@ -6,7 +6,8 @@
     "dev:ts": "yarn build --watch",
     "build": "tsc --build",
     "start": "es4x dist/index.js",
-    "watch": "yarn es4x run --redeploy='dist/index.js' dist/index.js"
+    "watch": "yarn es4x run --redeploy='dist/index.js' dist/index.js",
+    "start:watch": "concurrently 'yarn dev:ts' 'yarn watch'"
   },
   "dependencies": {
     "@effect-ts/core": "^0.46.1",
@@ -16,6 +17,7 @@
   },
   "devDependencies": {
     "@effect-ts/tracing-plugin": "^0.14.18",
+    "concurrently": "^7.0.0",
     "ts-patch": "^2.0.1",
     "typescript": "^4.4.4"
   },
