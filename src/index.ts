@@ -1,58 +1,55 @@
+
+import { Router } from '@vertx/web';
+
 import * as T from "@effect-ts/core/Effect"
-import * as L from "@effect-ts/core/Effect/Layer"
-import { pipe } from "@effect-ts/core/Function"
-import { runMain } from "@effect-ts/node/Runtime"
-import { service, tag } from "@effect-ts/core/Has"
-import { _A } from "@effect-ts/core/Utils"
+import * as F from "@effect-ts/core/Effect/Fiber"
+import * as M from "@effect-ts/core/Effect/Managed"
+import { pipe } from '@effect-ts/core/Function';
+import { HttpServer } from '@vertx/core';
 
-// 
-// Service Constructor
-//
-
-export const LoggerId = Symbol()
-
-export const makeLogger = T.succeedWith(() => {
-  return service(LoggerId, {
-    log: (s: string) => T.succeedWith(() => {
-      console.log(s)
-    })
+const managedServer = (router: Router) => M.makeExit_(
+  T.effectAsync<unknown, never, HttpServer>((cb) => {
+    vertx
+      .createHttpServer()
+      .requestHandler(router)
+      .listen(8080)
+      .then((server) => {
+        cb(T.succeed(server))
+      })
+  }),
+  (server) => T.effectAsync<unknown, never, void>((cb) => {
+    server.close().then(() => {
+        cb(T.unit)
+      })
   })
+)
+
+const server = M.gen(function * (_) {
+  const { runFiber } = yield* _(T.runtime<T.DefaultEnv>())
+
+  const router = Router.router(vertx);
+
+  router.get("/json").handler(ctx => {
+    pipe(
+      T.succeedWith(() => {
+        ctx.response()
+          .putHeader("Content-Type", "application/json")
+          .end(JSON.stringify({ message: 'Hello from effect running in Vert.x' }));
+      }),
+      runFiber
+    )
+  });
+
+  return yield* _(managedServer(router))
 })
 
-// 
-// Service Constructor
-//
-
-export interface Logger extends _A<typeof makeLogger> { }
-export const Logger = tag<Logger>(LoggerId)
-
-// 
-// Layer to compose constructors (like LiveLogger["+++"](LiveDatabase)[">+>"](LiveUserRepo))
-//
-
-export const LiveLogger = L.fromEffect(Logger)(makeLogger)
-
-//
-// Access functions (here there is an annotation)
-//
-export const { log } = T.deriveLifted(Logger)(["log"], [], [])
-
-//
-// Any type of program, freely uses log without any explicit annotation, the type will be T.Effect<Has<Logger>, never, void>
-//
-
-export const program = pipe(
-  T.do,
-  T.bind("a", () => T.succeedWith(() => 1)),
-  T.bind("b", () => T.succeedWith(() => 2)),
-  T.bind("c", ({ a, b }) => T.succeedWith(() => a + b)),
-  T.chain((result) => log(`result: ${result}`))
+const rootFiber = pipe(
+  M.useForever(server),
+  T.runFiber
 )
 
-pipe(
-  program,
-  // provides all the dependencies
-  T.provideSomeLayer(LiveLogger),
-  // runs the program
-  runMain
-)
+process.on("undeploy", (done) => {
+  T.runPromise(F.interrupt(rootFiber)).then(() =>{
+    done.complete()
+  })
+})

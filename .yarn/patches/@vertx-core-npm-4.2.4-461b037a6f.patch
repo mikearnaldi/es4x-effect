@@ -1,0 +1,12 @@
+diff --git a/index.d.ts b/index.d.ts
+index 47e4d442f12c389a023d9cc1d0805fdef67c43fa..676fff2c79999045ab29b88aefb6ced4ed3b15c7 100644
+--- a/index.d.ts
++++ b/index.d.ts
+@@ -9057,6 +9057,7 @@ declare global {
+     stderr: any;
+     stdin: any;
+     cwd: () => string;
++    on: (event: "undeploy", body: (fut: { complete: () => void }) => void) => void
+   };
+ 
+   const Java: {

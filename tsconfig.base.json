@@ -4,10 +4,10 @@
       "declaration": true,
       "declarationMap": true,
       "incremental": true,
-      "isolatedModules": true,
+      "isolatedModules": false,
       "esModuleInterop": true,
       "lib": ["ES2020", "DOM"],
-      "moduleResolution": "node",
+      "moduleResolution": "Node",
       "sourceMap": true,
       "skipLibCheck": true,
       "strict": true,
@@ -17,6 +17,8 @@
       "resolveJsonModule": true,
       "target": "ES2020",
       "plugins": [{ "transform": "@effect-ts/tracing-plugin" }],
+      "types": ["@vertx/core"],
+      "module": "CommonJS"
     }
   }
   
